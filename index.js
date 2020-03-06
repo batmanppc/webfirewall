@@ -64,8 +64,15 @@ function emptyfn () {
   return Promise.resolve(true)
 }
 
+function defaultOnDrop (next) {
+  let err = new Error('Forbidden')
+  err.status = 403
+  return next(err)
+}
+
 module.exports = (config) => {
   config.defaultAction = (config.defaultAction || 'DROP').toUpperCase()
+  config.onDrop = (config.onDrop || defaultOnDrop)
   for (let rule of config.rules) {
     rule.origin = rule.origin || ['*']
     rule.methods = rule.methods || ['*']
@@ -104,9 +111,7 @@ module.exports = (config) => {
                 next()
                 break
               case 'DROP':
-                let err = new Error('Forbidden')
-                err.status = 403
-                next(err)
+                config.onDrop(next)
                 break
             }
 
@@ -120,9 +125,7 @@ module.exports = (config) => {
           next()
           break
         case 'DROP':
-          let err = new Error('Forbidden')
-          err.status = 403
-          next(err)
+          config.onDrop(next)
           break
       }
     }).catch(next)
